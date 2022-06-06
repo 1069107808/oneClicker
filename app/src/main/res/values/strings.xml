@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Demo</string>
+    <string name="text_open_accessibility_service">打开无障碍服务设置</string>
+    <string name="text_authorization_accessibility_service">已授权无障碍服务</string>
+    <string name="text_open_popup_service">打开浮窗设置</string>
+    <string name="text_authorization_open_popup_service">已授权浮窗</string>
+    <string name="text_open_floating_window">打开悬浮窗</string>
+    <string name="hello_world">Hello world</string>
+    <string name="text_close_floating_window">关闭悬浮窗</string>
+</resources>

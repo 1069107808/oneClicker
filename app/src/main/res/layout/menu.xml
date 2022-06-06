@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/menu"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <ImageView
+        android:id="@+id/close"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:contentDescription="@string/app_name"
+        android:src="@drawable/exit" />
+
+    <ImageView
+        android:id="@+id/start"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_below="@id/close"
+        android:contentDescription="@string/app_name"
+        android:src="@drawable/begin"
+        android:visibility="visible" />
+
+    <ImageView
+        android:id="@+id/stop"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_below="@id/close"
+        android:contentDescription="@string/app_name"
+        android:src="@drawable/stop"
+        android:visibility="invisible" />
+
+    <ImageView
+        android:id="@+id/setting"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_below="@id/stop"
+        android:contentDescription="@string/app_name"
+        android:src="@drawable/setting"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/move"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_below="@id/setting"
+        android:clickable="false"
+        android:contentDescription="@string/app_name"
+        android:src="@drawable/move" />
+
+</RelativeLayout>

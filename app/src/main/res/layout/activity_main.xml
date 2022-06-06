@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <Button
+        android:id="@+id/open_accessibility_service"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/text_open_accessibility_service"
+        android:onClick="openAccessibilitySettings"
+        android:textSize="20sp" />
+
+    <Button
+        android:id="@+id/open_popup_service"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/text_open_popup_service"
+        android:onClick="openOverLaySettings"
+        android:textSize="20sp"
+        android:layout_below="@id/open_accessibility_service"/>
+
+    <Button
+        android:id="@+id/open_floating_window"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/text_open_floating_window"
+        android:onClick="openFloatingWindow"
+        android:textSize="20sp"
+        android:layout_below="@id/open_popup_service"/>
+
+</RelativeLayout>
