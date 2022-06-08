@@ -6,10 +6,6 @@ import android.accessibilityservice.AccessibilityService;
 
 import android.accessibilityservice.GestureDescription;
 import android.annotation.SuppressLint;
-<<<<<<< HEAD
-import android.content.Context;
-=======
->>>>>>> 0dcc3dc (test)
 import android.content.Intent;
 import android.graphics.Path;
 import android.os.Build;
@@ -29,11 +25,7 @@ public class myAccessibilityService extends AccessibilityService {
 
     private boolean isStarted = false;
 
-<<<<<<< HEAD
-    private int event, edge, line, edge2;
-=======
     private int event, edge;
->>>>>>> 0dcc3dc (test)
 
     private int nowX, nowY;
 
@@ -64,14 +56,6 @@ public class myAccessibilityService extends AccessibilityService {
         screenH = this.getResources().getDisplayMetrics().heightPixels - statusH;
 
         edge = (int) (15 * this.getResources().getDisplayMetrics().density + 0.5f);
-
-<<<<<<< HEAD
-        edge2 = dip2px(this, 6);
-        line = sp2px(this, 20);
-
-
-=======
->>>>>>> 0dcc3dc (test)
         int type = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ?
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY :
                 WindowManager.LayoutParams.TYPE_PHONE;
@@ -217,35 +201,9 @@ public class myAccessibilityService extends AccessibilityService {
                             move((int) rect.getX() + offsetX, (int) rect.getY() + offsetY);
                             break;
                     }
-<<<<<<< HEAD
 
-                    int x1 = (int) rect.getX();
-                    int x2 = x1 + rectParams.width;
-
-                    int y1 = (int) rect.getY();
-                    int y2 = y1 + rectParams.height;
-
-                    A1.setText(" "+ x1+","+(y1+statusH));
-                    B1.setText(x2+","+(y1+statusH)+" ");
-                    C1.setText(" "+x1+","+(y2+statusH));
-                    D1.setText(x2+","+(y2+statusH)+" ");
-
-                    A1.setX(x1);
-                    A1.setY(y1);
-
-                    B1.setX(x2 - B1.getWidth());
-                    B1.setY(y1);
-
-                    C1.setX(x1);
-                    C1.setY(y2 - C1.getHeight());
-
-                    D1.setX(x2 - D1.getWidth());
-                    D1.setY(C1.getY());
-
-
-=======
                     showLocation();
->>>>>>> 0dcc3dc (test)
+
                     window.updateViewLayout(layer1, params1);
                     break;
                 case MotionEvent.ACTION_UP:
@@ -277,8 +235,6 @@ public class myAccessibilityService extends AccessibilityService {
             else if (nowX >= rectX + rectParams.width - edge) return 4;
             else return 0;
         }
-<<<<<<< HEAD
-=======
 
         @SuppressLint("SetTextI18n")
         private void showLocation() {
@@ -304,8 +260,6 @@ public class myAccessibilityService extends AccessibilityService {
             D1.setX(x2 - D1.getWidth());
             D1.setY(C1.getY());
         }
-
->>>>>>> 0dcc3dc (test)
     }
 
     private void setParams(int x, int y, int height, int width) {
@@ -351,20 +305,6 @@ public class myAccessibilityService extends AccessibilityService {
         return x > params2.x && x < params2.x + params2.width && y > params2.y&& y < params2.y + params2.height;
     }
 
-<<<<<<< HEAD
-    public static int dip2px(Context context, float dipValue) {
-        final float scale = context.getResources().getDisplayMetrics().density;
-        return (int) (dipValue * scale + 0.5f);
-    }
-
-    public static int sp2px(Context context, float spValue) {
-        final float fontScale = context.getResources().getDisplayMetrics().scaledDensity;
-        return (int) (spValue * fontScale + 0.5f);
-    }
-
-
-=======
->>>>>>> 0dcc3dc (test)
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {}
 
