@@ -27,9 +27,9 @@ public class myAccessibilityService extends AccessibilityService {
 
     private int event, edge;
 
-    private int nowX, nowY;
+    private int lastX, lastY;
 
-    private int statusH, screenW, screenH;
+    private int statusH, screenW, screenH, limit;
     private WindowManager window = null;
 
     private View menu = null;
@@ -55,7 +55,10 @@ public class myAccessibilityService extends AccessibilityService {
         screenW = this.getResources().getDisplayMetrics().widthPixels;
         screenH = this.getResources().getDisplayMetrics().heightPixels - statusH;
 
+        limit = screenW / 6;
+
         edge = (int) (15 * this.getResources().getDisplayMetrics().density + 0.5f);
+
         int type = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ?
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY :
                 WindowManager.LayoutParams.TYPE_PHONE;
@@ -144,16 +147,16 @@ public class myAccessibilityService extends AccessibilityService {
         public boolean onTouch(View view, MotionEvent motionEvent) {
             switch (motionEvent.getAction()) {
                 case MotionEvent.ACTION_MOVE:
-                    menuParams.x += (int) motionEvent.getRawX() - nowX;
-                    menuParams.y += (int) motionEvent.getRawY() - nowY;
+                    menuParams.x += (int) motionEvent.getRawX() - lastX;
+                    menuParams.y += (int) motionEvent.getRawY() - lastY;
                     window.updateViewLayout(menu, menuParams);
                 default:
-                    updateNowXY((int) motionEvent.getRawX(), (int) motionEvent.getRawY());
+                    updateLastXY((int) motionEvent.getRawX(), (int) motionEvent.getRawY());
                     break;
                 case MotionEvent.ACTION_OUTSIDE:
-                    updateNowXY((int) motionEvent.getRawX(), (int) motionEvent.getRawY());
-                    Log.d(TAG, "x:"+nowX+" y:"+nowY);
-                    if (isStarted && inBox(nowX, nowY)) click(nowX, nowY);
+                    updateLastXY((int) motionEvent.getRawX(), (int) motionEvent.getRawY());
+                    Log.d(TAG, "x:"+ lastX +" y:"+ lastY);
+                    if (isStarted && inBox(lastX, lastY)) click(lastX, lastY);
                     break;
             }
             return true;
@@ -180,30 +183,28 @@ public class myAccessibilityService extends AccessibilityService {
                     event = getEvent();
                     break;
                 case MotionEvent.ACTION_MOVE:
-                    int offsetX = (int) motionEvent.getRawX() - nowX;
-                    int offsetY = (int) motionEvent.getRawY() - nowY;
+                    final int offsetX = (int) motionEvent.getRawX() - lastX;
+                    final int offsetY = (int) motionEvent.getRawY() - lastY;
                     switch (event) {
                         case 1:
-                            rectParams.height -= offsetY;
+                            updateHeight(-1, offsetY);
                             moveY((int) rect.getY() + offsetY);
                             break;
                         case 2:
-                            rectParams.height += offsetY;
+                            updateHeight(1, offsetY);
                             break;
                         case 3:
-                            rectParams.width -= offsetX;
+                            updateWidth(-1, offsetX);
                             moveX((int) rect.getX() + offsetX);
                             break;
                         case 4:
-                            rectParams.width += offsetX;
+                            updateWidth(1, offsetX);
                             break;
                         case 0:
                             move((int) rect.getX() + offsetX, (int) rect.getY() + offsetY);
                             break;
                     }
-
                     showLocation();
-
                     window.updateViewLayout(layer1, params1);
                     break;
                 case MotionEvent.ACTION_UP:
@@ -211,8 +212,20 @@ public class myAccessibilityService extends AccessibilityService {
                     window.updateViewLayout(layer2, params2);
                     break;
             }
-            updateNowXY((int) motionEvent.getRawX(), (int) motionEvent.getRawY());
+            updateLastXY((int) motionEvent.getRawX(), (int) motionEvent.getRawY());
             return true;
+        }
+
+        private void updateWidth(int flag, int offsetX) {
+            rectParams.width += flag * offsetX;
+            rectParams.width = Math.max(rectParams.width, limit);
+            rectParams.width = Math.min(rectParams.width, screenW);
+        }
+
+        private void updateHeight(int flag, int offsetY) {
+            rectParams.height += flag * offsetY;
+            rectParams.height = Math.max(rectParams.height, limit);
+            rectParams.height = Math.min(rectParams.height, screenH);
         }
 
         private void move(int x, int y) { moveX(x); moveY(y);}
@@ -229,10 +242,10 @@ public class myAccessibilityService extends AccessibilityService {
 
         private int getEvent() {
             final int rectX = (int) rect.getX(), rectY = (int) rect.getY() + statusH;
-            if      (nowY <= rectY + edge) return 1;
-            else if (nowY >= rectY + rectParams.height - edge) return 2;
-            else if (nowX <= rectX + edge) return 3;
-            else if (nowX >= rectX + rectParams.width - edge) return 4;
+            if      (lastY <= rectY + edge) return 1;
+            else if (lastY >= rectY + rectParams.height - edge) return 2;
+            else if (lastX <= rectX + edge) return 3;
+            else if (lastX >= rectX + rectParams.width - edge) return 4;
             else return 0;
         }
 
@@ -299,7 +312,7 @@ public class myAccessibilityService extends AccessibilityService {
         window.removeView(menu);
     }
 
-    private void updateNowXY(int x, int y) { nowX = x; nowY = y;}
+    private void updateLastXY(int x, int y) { lastX = x; lastY = y;}
 
     private boolean inBox(int x, int y) {
         return x > params2.x && x < params2.x + params2.width && y > params2.y&& y < params2.y + params2.height;
