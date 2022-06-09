@@ -99,7 +99,7 @@ public class myAccessibilityService extends AccessibilityService {
         consoleView = View.inflate(this, R.layout.console, null);
         consoleView.findViewById(R.id.close).setOnClickListener(view -> close());
         consoleView.findViewById(R.id.start).setOnClickListener(view -> start());
-        consoleView.findViewById(R.id.stop).setOnClickListener(view -> stop());
+        consoleView.findViewById(R.id.pause).setOnClickListener(view -> pause());
         consoleView.setOnTouchListener(new touchOnMenu());
     }
 
@@ -119,7 +119,7 @@ public class myAccessibilityService extends AccessibilityService {
     }
 
     private void init() {
-        consoleView.findViewById(R.id.stop).setVisibility(View.INVISIBLE);
+        consoleView.findViewById(R.id.pause).setVisibility(View.INVISIBLE);
         consoleView.findViewById(R.id.start).setVisibility(View.VISIBLE);
 
         consoleParams.x = 0;
@@ -282,15 +282,15 @@ public class myAccessibilityService extends AccessibilityService {
 
     private void start() {
         consoleView.findViewById(R.id.start).setVisibility(View.INVISIBLE);
-        consoleView.findViewById(R.id.stop).setVisibility(View.VISIBLE);
+        consoleView.findViewById(R.id.pause).setVisibility(View.VISIBLE);
         isStarted = true;
 
         windowParams2.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
         manager.updateViewLayout(window2, windowParams2);
     }
 
-    private void stop() {
-        consoleView.findViewById(R.id.stop).setVisibility(View.INVISIBLE);
+    private void pause() {
+        consoleView.findViewById(R.id.pause).setVisibility(View.INVISIBLE);
         consoleView.findViewById(R.id.start).setVisibility(View.VISIBLE);
         isStarted = false;
 

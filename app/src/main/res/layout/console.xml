@@ -21,19 +21,19 @@
         android:visibility="visible" />
 
     <ImageView
-        android:id="@+id/stop"
+        android:id="@+id/pause"
         android:layout_width="60dp"
         android:layout_height="60dp"
         android:layout_below="@id/close"
         android:contentDescription="@string/app_name"
-        android:src="@drawable/stop"
+        android:src="@drawable/pause"
         android:visibility="invisible" />
 
     <ImageView
         android:id="@+id/setting"
         android:layout_width="60dp"
         android:layout_height="60dp"
-        android:layout_below="@id/stop"
+        android:layout_below="@id/pause"
         android:contentDescription="@string/app_name"
         android:src="@drawable/setting"
         android:visibility="gone" />
