@@ -21,28 +21,35 @@ import android.widget.Toast;
 
 public class myAccessibilityService extends AccessibilityService {
 
+    private final static int RESIZE_TOP    = 1;
+    private final static int RESIZE_BOTTOM = 2;
+    private final static int RESIZE_LEFT   = 3;
+    private final static int RESIZE_RIGHT  = 4;
+    private final static int MOVE_WINDOW   = 0;
+
     public static boolean isOnAccessibilityService = false;
 
+    private boolean isCreated = false;
     private boolean isStarted = false;
+    private boolean isTesting = true;
 
-    private int event, edge;
+    private int action, edge;
 
     private int lastX, lastY;
 
     private int statusH, screenW, screenH, limit;
-    private WindowManager manager = null;
+
+    private WindowManager wm = null;
 
     private View rect = null;
-    private ViewGroup.LayoutParams rectParams = null;
-
-    private View consoleView = null;
-    private WindowManager.LayoutParams consoleParams = null;
-
     private View window1 = null;
-    private WindowManager.LayoutParams windowParams1 = null;
-
     private View window2 = null;
+    private View consoleView = null;
+
+    private ViewGroup.LayoutParams rectParams = null;
+    private WindowManager.LayoutParams windowParams1 = null;
     private WindowManager.LayoutParams windowParams2 = null;
+    private WindowManager.LayoutParams consoleParams = null;
 
     private TextView A1, B1, C1, D1;
 
@@ -54,14 +61,16 @@ public class myAccessibilityService extends AccessibilityService {
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY :
                 WindowManager.LayoutParams.TYPE_PHONE;
 
-        manager = (WindowManager) getSystemService(WINDOW_SERVICE);
+        wm = (WindowManager) getSystemService(WINDOW_SERVICE);
 
         statusH = this.getResources().getDimensionPixelSize(
-                       getResources().getIdentifier("status_bar_height", "dimen", "android"));
+                getResources().getIdentifier("status_bar_height", "dimen", "android"));
         screenW = this.getResources().getDisplayMetrics().widthPixels;
         screenH = this.getResources().getDisplayMetrics().heightPixels - statusH;
-        limit = screenW / 6;
+        limit = screenW / 20;
         edge = (int) (15 * this.getResources().getDisplayMetrics().density + 0.5f);
+
+        Log.d(TAG, "onCreate: "+screenW+"x"+screenH);
 
         consoleParams = initParams(-2, -2, type, 0.65f, 0x00000020 | 0x00040000);
         windowParams1 = initParams(-1, -1, type, 0.85f, 0x00000010);
@@ -74,10 +83,13 @@ public class myAccessibilityService extends AccessibilityService {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        init();
-        manager.addView(window1, windowParams1);
-        manager.addView(window2, windowParams2);
-        manager.addView(consoleView, consoleParams);
+        if (!isCreated) {
+            isCreated = true;
+            init();
+            wm.addView(window1, windowParams1);
+            wm.addView(window2, windowParams2);
+            wm.addView(consoleView, consoleParams);
+        }
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -89,7 +101,7 @@ public class myAccessibilityService extends AccessibilityService {
     }
 
     private WindowManager.LayoutParams initParams(int w, int h, int type, float alpha, int _flags) {
-        WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams(w, h, 0, 0, type, _flags, 1);
+        WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams(w, h, type, _flags, 1);
         layoutParams.gravity = Gravity.START | Gravity.TOP;
         layoutParams.alpha = alpha;
         return layoutParams;
@@ -97,20 +109,20 @@ public class myAccessibilityService extends AccessibilityService {
 
     private void createConsole() {
         consoleView = View.inflate(this, R.layout.console, null);
+        consoleView.setOnTouchListener(new touchOnMenu());
         consoleView.findViewById(R.id.close).setOnClickListener(view -> close());
         consoleView.findViewById(R.id.start).setOnClickListener(view -> start());
         consoleView.findViewById(R.id.pause).setOnClickListener(view -> pause());
-        consoleView.setOnTouchListener(new touchOnMenu());
     }
 
     private void createWindow1() {
         window1 = View.inflate(this, R.layout.layer1, null);
         rect = window1.findViewById(R.id.myView);
+        rectParams = rect.getLayoutParams();
         A1 = window1.findViewById(R.id.A);
         B1 = window1.findViewById(R.id.B);
         C1 = window1.findViewById(R.id.C);
         D1 = window1.findViewById(R.id.D);
-        rectParams = rect.getLayoutParams();
     }
 
     private void createWindow2() {
@@ -131,6 +143,7 @@ public class myAccessibilityService extends AccessibilityService {
         rect.setY((float) rectParams.height * 2);
 
         setParams((int) rect.getX(), (int) rect.getY(), rectParams.height, rectParams.width);
+        if (isTesting) showLocation();
     }
 
     private class touchOnMenu implements View.OnTouchListener {
@@ -141,15 +154,14 @@ public class myAccessibilityService extends AccessibilityService {
                 case MotionEvent.ACTION_MOVE:
                     consoleParams.x += (int) motionEvent.getRawX() - lastX;
                     consoleParams.y += (int) motionEvent.getRawY() - lastY;
-                    manager.updateViewLayout(consoleView, consoleParams);
+                    wm.updateViewLayout(consoleView, consoleParams);
                 default:
-                    updateLastXY((int) motionEvent.getRawX(), (int) motionEvent.getRawY());
+                    updateLastTouch((int) motionEvent.getRawX(), (int) motionEvent.getRawY());
                     break;
                 case MotionEvent.ACTION_OUTSIDE:
-                    updateLastXY((int) motionEvent.getRawX(), (int) motionEvent.getRawY());
+                    updateLastTouch((int) motionEvent.getRawX(), (int) motionEvent.getRawY());
                     Log.d(TAG, "x:"+ lastX +" y:"+ lastY);
                     if (isStarted && inBox(lastX, lastY)) click(lastX, lastY);
-                    break;
             }
             return true;
         }
@@ -172,99 +184,111 @@ public class myAccessibilityService extends AccessibilityService {
         public boolean onTouch(View view, MotionEvent motionEvent) {
             switch (motionEvent.getAction()) {
                 case MotionEvent.ACTION_DOWN:
-                    event = getEvent();
+                    action = getAction();
                     break;
                 case MotionEvent.ACTION_MOVE:
                     final int offsetX = (int) motionEvent.getRawX() - lastX;
                     final int offsetY = (int) motionEvent.getRawY() - lastY;
-                    switch (event) {
-                        case 1:
-                            updateHeight(-1, offsetY);
-                            moveY((int) rect.getY() + offsetY);
+                    switch (action) {
+                        case RESIZE_TOP:
+                            resizeUp(offsetY);
                             break;
-                        case 2:
-                            updateHeight(1, offsetY);
+                        case RESIZE_BOTTOM:
+                            resizeDown(offsetY);
                             break;
-                        case 3:
-                            updateWidth(-1, offsetX);
-                            moveX((int) rect.getX() + offsetX);
+                        case RESIZE_LEFT:
+                            resizeLeft(offsetX);
                             break;
-                        case 4:
-                            updateWidth(1, offsetX);
+                        case RESIZE_RIGHT:
+                            resizeRight(offsetX);
                             break;
-                        case 0:
-                            move((int) rect.getX() + offsetX, (int) rect.getY() + offsetY);
+                        case MOVE_WINDOW:
+                            moveTo((int) rect.getX() + offsetX, (int) rect.getY() + offsetY);
                             break;
                     }
-                    showLocation();
-                    manager.updateViewLayout(window1, windowParams1);
+                    if (isTesting) showLocation();
+                    if (rectParams.width <= limit || rectParams.height <= limit) maximize();
+                    wm.updateViewLayout(window1, windowParams1);
                     break;
                 case MotionEvent.ACTION_UP:
                     setParams((int) rect.getX(), (int) rect.getY(), rectParams.height, rectParams.width);
-                    manager.updateViewLayout(window2, windowParams2);
+                    wm.updateViewLayout(window2, windowParams2);
                     break;
             }
-            updateLastXY((int) motionEvent.getRawX(), (int) motionEvent.getRawY());
+            updateLastTouch((int) motionEvent.getRawX(), (int) motionEvent.getRawY());
             return true;
         }
 
-        private void updateWidth(int flag, int offsetX) {
-            rectParams.width += flag * offsetX;
-            rectParams.width = Math.max(rectParams.width, limit);
-            rectParams.width = Math.min(rectParams.width, screenW);
+        private void maximize() {
+            rect.setX(0);
+            rect.setY(0);
+            rectParams.width = screenW;
+            rectParams.height = screenH;
         }
 
-        private void updateHeight(int flag, int offsetY) {
-            rectParams.height += flag * offsetY;
-            rectParams.height = Math.max(rectParams.height, limit);
-            rectParams.height = Math.min(rectParams.height, screenH);
+        private void resizeUp(int offsetY) {
+            rectParams.height -= offsetY;
+            moveToY((int) rect.getY() + offsetY);
         }
 
-        private void move(int x, int y) { moveX(x); moveY(y);}
+        private void resizeDown(int offsetY) {
+            rectParams.height += offsetY;
+        }
 
-        private void moveX(int x) {
+        private void resizeLeft(int offsetX) {
+            rectParams.width -= offsetX;
+            moveToX((int) rect.getX() + offsetX);
+        }
+
+        private void resizeRight(int offsetX) {
+            rectParams.width += offsetX;
+        }
+
+        private void moveTo(int x, int y) { moveToX(x); moveToY(y); }
+
+        private void moveToX(int x) {
             if (x < 0) rect.setX(0);
             else rect.setX(Math.min(x, screenW - rectParams.width));
         }
 
-        private void moveY(int y) {
+        private void moveToY(int y) {
             if (y < 0) rect.setY(0);
             else rect.setY(Math.min(y, screenH - rectParams.height));
         }
 
-        private int getEvent() {
+        private int getAction() {
             final int rectX = (int) rect.getX(), rectY = (int) rect.getY() + statusH;
-            if      (lastY <= rectY + edge) return 1;
-            else if (lastY >= rectY + rectParams.height - edge) return 2;
-            else if (lastX <= rectX + edge) return 3;
-            else if (lastX >= rectX + rectParams.width - edge) return 4;
-            else return 0;
+            if      (lastY <= rectY + edge)                     return RESIZE_TOP;
+            else if (lastY >= rectY + rectParams.height - edge) return RESIZE_BOTTOM;
+            else if (lastX <= rectX + edge)                     return RESIZE_LEFT;
+            else if (lastX >= rectX + rectParams.width - edge)  return RESIZE_RIGHT;
+            else                                                return MOVE_WINDOW;
         }
+    }
 
-        @SuppressLint("SetTextI18n")
-        private void showLocation() {
-            int x1 = (int) rect.getX();
-            int x2 = x1 + rectParams.width;
-            int y1 = (int) rect.getY();
-            int y2 = y1 + rectParams.height;
+    @SuppressLint("SetTextI18n")
+    private void showLocation() {
+        int x1 = (int) rect.getX();
+        int x2 = x1 + rectParams.width;
+        int y1 = (int) rect.getY();
+        int y2 = y1 + rectParams.height;
 
-            A1.setText(" "+ x1+","+(y1+statusH));
-            B1.setText(x2+","+(y1+statusH)+" ");
-            C1.setText(" "+x1+","+(y2+statusH));
-            D1.setText(x2+","+(y2+statusH)+" ");
+        A1.setText(" "+ x1+","+(y1+statusH));
+        B1.setText(x2+","+(y1+statusH)+" ");
+        C1.setText(" "+x1+","+(y2+statusH));
+        D1.setText(x2+","+(y2+statusH)+" ");
 
-            A1.setX(x1);
-            A1.setY(y1);
+        A1.setX(x1);
+        A1.setY(y1);
 
-            B1.setX(x2 - B1.getWidth());
-            B1.setY(y1);
+        B1.setX(x2 - B1.getWidth());
+        B1.setY(y1);
 
-            C1.setX(x1);
-            C1.setY(y2 - C1.getHeight());
+        C1.setX(x1);
+        C1.setY(y2 - C1.getHeight());
 
-            D1.setX(x2 - D1.getWidth());
-            D1.setY(C1.getY());
-        }
+        D1.setX(x2 - D1.getWidth());
+        D1.setY(C1.getY());
     }
 
     private void setParams(int x, int y, int height, int width) {
@@ -274,19 +298,13 @@ public class myAccessibilityService extends AccessibilityService {
         windowParams2.width = width;
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        Toast.makeText(this, "已停止", Toast.LENGTH_SHORT).show();
-    }
-
     private void start() {
         consoleView.findViewById(R.id.start).setVisibility(View.INVISIBLE);
         consoleView.findViewById(R.id.pause).setVisibility(View.VISIBLE);
         isStarted = true;
 
         windowParams2.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
-        manager.updateViewLayout(window2, windowParams2);
+        wm.updateViewLayout(window2, windowParams2);
     }
 
     private void pause() {
@@ -295,20 +313,24 @@ public class myAccessibilityService extends AccessibilityService {
         isStarted = false;
 
         windowParams2.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-        manager.updateViewLayout(window2, windowParams2);
+        wm.updateViewLayout(window2, windowParams2);
     }
 
     private void close() {
-        manager.removeView(window1);
-        manager.removeView(window2);
-        manager.removeView(consoleView);
+        isCreated = false;
+        wm.removeView(window1);
+        wm.removeView(window2);
+        wm.removeView(consoleView);
     }
 
-    private void updateLastXY(int x, int y) { lastX = x; lastY = y;}
+    private void updateLastTouch(int x, int y) { lastX = x; lastY = y;}
 
     private boolean inBox(int x, int y) {
         return x > windowParams2.x && x < windowParams2.x + windowParams2.width && y > windowParams2.y&& y < windowParams2.y + windowParams2.height;
     }
+
+    @Override
+    public void onDestroy() { super.onDestroy(); }
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {}
