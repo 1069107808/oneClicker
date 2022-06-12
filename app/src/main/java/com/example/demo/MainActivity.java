@@ -31,12 +31,16 @@ public class MainActivity extends AppCompatActivity{
             return;
         }
 
-        if (!myAccessibilityService.isOnAccessibilityService) {
+        /*
+        if (!MyAccessibilityService.isOnAccessibilityService) {
             Toast.makeText(MainActivity.this, "Accessibility services have not been authorized", Toast.LENGTH_SHORT).show();
             return;
         }
+         */
 
-        startService(new Intent(MainActivity.this, myAccessibilityService.class));
+        if (MyAccessibilityService.isWindowCreated) return;
+
+        startService(new Intent(MainActivity.this, MyAccessibilityService.class));
     }
 
 }
