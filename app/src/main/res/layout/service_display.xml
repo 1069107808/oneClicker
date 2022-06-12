@@ -1,46 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:id="@+id/layer_visible">
+    android:layout_height="match_parent" >
 
     <ImageView
-        android:id="@+id/myView"
+        android:id="@+id/mView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#2196F3"
+        android:background="@drawable/rectangle"
         android:contentDescription="@string/app_name" />
 
     <TextView
-        android:id="@+id/A"
+        android:id="@+id/LT"
         android:textSize="20sp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/myView"
-        android:layout_alignTop="@+id/myView"/>
+        android:layout_alignStart="@+id/mView"
+        android:layout_alignTop="@+id/mView"/>
 
     <TextView
-        android:id="@+id/B"
+        android:id="@+id/RT"
         android:textSize="20sp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignEnd="@+id/myView"
-        android:layout_alignTop="@+id/myView"/>
+        android:layout_alignEnd="@+id/mView"
+        android:layout_alignTop="@+id/mView"/>
 
     <TextView
-        android:id="@+id/C"
+        android:id="@+id/LB"
         android:textSize="20sp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/myView"
-        android:layout_alignBottom="@+id/myView"/>
+        android:layout_alignStart="@+id/mView"
+        android:layout_alignBottom="@+id/mView"/>
 
     <TextView
-        android:id="@+id/D"
+        android:id="@+id/RB"
         android:textSize="20sp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignEnd="@+id/myView"
-        android:layout_alignBottom="@+id/myView"/>
+        android:layout_alignEnd="@+id/mView"
+        android:layout_alignBottom="@+id/mView"/>
 
 </RelativeLayout>

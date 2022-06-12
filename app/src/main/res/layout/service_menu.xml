@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/menu"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content">
 
@@ -9,7 +8,7 @@
         android:layout_width="60dp"
         android:layout_height="60dp"
         android:contentDescription="@string/app_name"
-        android:src="@drawable/exit" />
+        android:background="@drawable/exit" />
 
     <ImageView
         android:id="@+id/start"
@@ -17,7 +16,7 @@
         android:layout_height="60dp"
         android:layout_below="@id/close"
         android:contentDescription="@string/app_name"
-        android:src="@drawable/begin"
+        android:background="@drawable/begin"
         android:visibility="visible" />
 
     <ImageView
@@ -26,7 +25,7 @@
         android:layout_height="60dp"
         android:layout_below="@id/close"
         android:contentDescription="@string/app_name"
-        android:src="@drawable/pause"
+        android:background="@drawable/pause"
         android:visibility="invisible" />
 
     <ImageView
@@ -35,8 +34,7 @@
         android:layout_height="60dp"
         android:layout_below="@id/pause"
         android:contentDescription="@string/app_name"
-        android:src="@drawable/setting"
-        android:visibility="gone" />
+        android:background="@drawable/setting" />
 
     <ImageView
         android:id="@+id/move"
@@ -45,6 +43,6 @@
         android:layout_below="@id/setting"
         android:clickable="false"
         android:contentDescription="@string/app_name"
-        android:src="@drawable/move" />
+        android:background="@drawable/move" />
 
 </RelativeLayout>
