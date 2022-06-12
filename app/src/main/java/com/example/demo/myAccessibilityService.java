@@ -97,7 +97,7 @@ public class myAccessibilityService extends AccessibilityService {
     public void onServiceConnected() {
         super.onServiceConnected();
         isOnAccessibilityService = true;
-        Toast.makeText(this, "已授权无障碍服务", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Authorized Accessibility Services", Toast.LENGTH_SHORT).show();
     }
 
     private WindowManager.LayoutParams initParams(int w, int h, int type, float alpha, int _flags) {

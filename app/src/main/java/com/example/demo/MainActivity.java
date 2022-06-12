@@ -27,16 +27,14 @@ public class MainActivity extends AppCompatActivity{
 
     public void openFloatingWindow(View view) {
         if (!Settings.canDrawOverlays(this)) {
-            Toast.makeText(MainActivity.this, "1", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, "Overlay permission has not been authorized", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        /*
         if (!myAccessibilityService.isOnAccessibilityService) {
-            Toast.makeText(MainActivity.this, "2", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, "Accessibility services have not been authorized", Toast.LENGTH_SHORT).show();
             return;
         }
-         */
 
         startService(new Intent(MainActivity.this, myAccessibilityService.class));
     }
