@@ -16,8 +16,7 @@
         android:layout_height="match_parent"
         android:background="#F44336"
         android:contentDescription="@string/app_name"
-        android:layout_alignStart="@id/mView"
-        android:visibility="visible" />
+        android:layout_alignParentStart="true" />
 
     <ImageView
         android:id="@+id/right"
@@ -25,8 +24,7 @@
         android:layout_height="match_parent"
         android:background="#4CAF50"
         android:contentDescription="@string/app_name"
-        android:layout_alignEnd="@+id/mView"
-        android:visibility="visible" />
+        android:layout_alignParentEnd="true" />
 
     <ImageView
         android:id="@+id/top"
@@ -34,8 +32,7 @@
         android:layout_height="15dp"
         android:background="#FFEB3B"
         android:contentDescription="@string/app_name"
-        android:layout_alignTop="@id/mView"
-        android:visibility="visible" />
+        android:layout_alignParentTop="true" />
 
     <ImageView
         android:id="@+id/bottom"
@@ -43,7 +40,6 @@
         android:layout_height="15dp"
         android:background="#673AB7"
         android:contentDescription="@string/app_name"
-        android:layout_alignBottom="@id/mView"
-        android:visibility="visible" />
+        android:layout_alignParentBottom="true" />
 
 </RelativeLayout>

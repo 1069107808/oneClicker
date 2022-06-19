@@ -26,12 +26,14 @@ public class MyAccessibilityService extends AccessibilityService {
 
     //private final static int LEFT = 0, RIGHT = 1, TOP = 2, BOTTOM = 3;
 
+    private final static int TEST_CLICK = 5;
+    private final static int KEEP_CLICK = 0;
     private boolean isStarted = false;
     private boolean isTesting = true;
 
     private int lastX, lastY;
 
-    private int statusH, screenW, screenH, edge;
+    private int statusH, screenW, screenH, edge, blank;
 
     private WindowManager wm;
 
@@ -41,7 +43,7 @@ public class MyAccessibilityService extends AccessibilityService {
 
     private Rect rDisplay;
 
-    private View lInteract, vEdgeL, vEdgeR, vEdgeT, vEdgeB;
+    private View lInteract, vInteract, vEdgeL, vEdgeR, vEdgeT, vEdgeB;
 
     private View lMenu;
 
@@ -64,9 +66,11 @@ public class MyAccessibilityService extends AccessibilityService {
 
         edge = (int) (15 * this.getResources().getDisplayMetrics().density + 0.5f);
 
+        blank = edge / 15;
+
         lpMenu = initParams(-2, -2, type, 0.65f, Gravity.START | Gravity.CENTER, 0x00000020);
         lMenu = View.inflate(this, R.layout.service_menu, null);
-        lMenu.setOnTouchListener(new MenuTouchListener());
+        lMenu.setOnTouchListener(new MenuEvents());
         lMenu.findViewById(R.id.close).setOnClickListener(view -> close());
         lMenu.findViewById(R.id.start).setOnClickListener(view -> start());
         lMenu.findViewById(R.id.pause).setOnClickListener(view -> pause());
@@ -80,49 +84,125 @@ public class MyAccessibilityService extends AccessibilityService {
         RT = lDisplay.findViewById(R.id.RT);
         RB = lDisplay.findViewById(R.id.RB);
 
-        lpInteract = initParams(-2, -2, type, 0.65f, Gravity.START | Gravity.TOP, 0x00000008);
+        lpInteract = initParams(-2, -2, type, 0.65f, Gravity.START | Gravity.TOP, 0x00000020 | 0x00040000);
         lInteract = View.inflate(this, R.layout.service_interact, null);
-        lInteract.setOnTouchListener(new InteractTouchListener());
+
+        vInteract = lInteract.findViewById(R.id.mView);
+        vInteract.setOnTouchListener(new InteractEvents());
+
         vEdgeL = lInteract.findViewById(R.id.left);
+        vEdgeL.setOnTouchListener(new EdgeLeftEvents());
+
         vEdgeR = lInteract.findViewById(R.id.right);
-        vEdgeR.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_MOVE:
-                        vDisplay.getLayoutParams().width += (int) event.getRawX() - lastX;
-                        wm.updateViewLayout(lDisplay, lpDisplay);
-                    case MotionEvent.ACTION_DOWN:
-                        updateLastTouch((int) event.getRawX(), (int) event.getRawY());
-                        break;
-                    case MotionEvent.ACTION_UP:
-                        syncParams(vDisplay, lpInteract);
-                        wm.updateViewLayout(lInteract, lpInteract);
-                        break;
-                }
-                return true;
-            }
-        });
+        vEdgeR.setOnTouchListener(new EdgeRightEvents());
+
         vEdgeT = lInteract.findViewById(R.id.top);
+        vEdgeT.setOnTouchListener(new EdgeTopEvents());
+
         vEdgeB = lInteract.findViewById(R.id.bottom);
-        vEdgeB.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_MOVE:
-                        vDisplay.getLayoutParams().height += (int) event.getRawY() - lastY;
-                        wm.updateViewLayout(lDisplay, lpDisplay);
-                    case MotionEvent.ACTION_DOWN:
-                        updateLastTouch((int) event.getRawX(), (int) event.getRawY());
-                        break;
-                    case MotionEvent.ACTION_UP:
-                        syncParams(vDisplay, lpInteract);
-                        wm.updateViewLayout(lInteract, lpInteract);
-                        break;
-                }
+        vEdgeB.setOnTouchListener(new EdgeBottomEvents());
+    }
+
+    private void padding(int x, int y) {
+        vEdgeT.getLayoutParams().height = y - lpInteract.y - statusH - edge;
+        vEdgeB.getLayoutParams().height = lpInteract.height - vEdgeT.getLayoutParams().height - 2 * edge;
+        vEdgeL.getLayoutParams().width = x - lpInteract.x - edge;
+        vEdgeR.getLayoutParams().width = lpInteract.width - vEdgeL.getLayoutParams().width - 2 * edge;
+        wm.updateViewLayout(lInteract, lpInteract);
+    }
+
+    private class EdgeTopEvents implements View.OnTouchListener {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            if (isStarted) {
+                padding((int) event.getRawX(), (int) event.getRawY());
                 return true;
             }
-        });
+
+            if (event.getAction() == MotionEvent.ACTION_MOVE)
+                resizeTop((int) event.getRawY() - lastY);
+            interactEvent(event.getAction(), (int) event.getRawX(), (int) event.getRawY());
+            return true;
+        }
+    }
+
+    private class EdgeBottomEvents implements View.OnTouchListener {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            if (isStarted) {
+                padding((int) event.getRawX(), (int) event.getRawY());
+                return true;
+            }
+
+            if (event.getAction() == MotionEvent.ACTION_MOVE)
+                resizeBottom((int) event.getRawY() - lastY);
+            interactEvent(event.getAction(), (int) event.getRawX(), (int) event.getRawY());
+            return true;
+        }
+    }
+
+    private class EdgeLeftEvents implements View.OnTouchListener {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            if (isStarted) {
+                padding((int) event.getRawX(), (int) event.getRawY());
+                return true;
+            }
+
+            if (event.getAction() == MotionEvent.ACTION_MOVE)
+                resizeLeft((int) event.getRawX() - lastX);
+            interactEvent(event.getAction(), (int) event.getRawX(), (int) event.getRawY());
+            return true;
+        }
+    }
+
+    private class EdgeRightEvents implements View.OnTouchListener {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            if (isStarted) {
+                padding((int) event.getRawX(), (int) event.getRawY());
+                return true;
+            }
+
+            if (event.getAction() == MotionEvent.ACTION_MOVE)
+                resizeRight((int) event.getRawX() - lastX);
+            interactEvent(event.getAction(), (int) event.getRawX(), (int) event.getRawY());
+            return true;
+        }
+    }
+
+    private void interactEvent(int action, int x, int y) {
+        if (isTesting) showLocation();
+        wm.updateViewLayout(lDisplay, lpDisplay);
+        if (action == MotionEvent.ACTION_UP) updateInteractLayer();
+        else updateLastTouch(x, y);
+    }
+
+    private void updateInteractLayer() {
+        syncParams(vDisplay, lpInteract);
+        wm.updateViewLayout(lInteract, lpInteract);
+    }
+
+    private void resizeTop(int diffY) {
+        vDisplay.getLayoutParams().height -= diffY;
+        rDisplay.bottom = screenH - vDisplay.getLayoutParams().height;
+        moveY(diffY);
+    }
+
+    private void resizeBottom(int diffY) {
+        vDisplay.getLayoutParams().height += diffY;
+        rDisplay.bottom = screenH - vDisplay.getLayoutParams().height;
+    }
+
+    private void resizeLeft(int diffX) {
+        vDisplay.getLayoutParams().width -= diffX;
+        rDisplay.right = screenW - vDisplay.getLayoutParams().width;
+        moveX(diffX);
+    }
+
+    private void resizeRight(int diffX) {
+        vDisplay.getLayoutParams().width += diffX;
+        rDisplay.right = screenW - vDisplay.getLayoutParams().width;
     }
 
     @Override
@@ -176,7 +256,7 @@ public class MyAccessibilityService extends AccessibilityService {
         params.height = view.getLayoutParams().height;
     }
 
-    private class MenuTouchListener implements View.OnTouchListener {
+    private class MenuEvents implements View.OnTouchListener {
         @SuppressLint("ClickableViewAccessibility")
         @Override
         public boolean onTouch(View v, MotionEvent event) {
@@ -197,76 +277,38 @@ public class MyAccessibilityService extends AccessibilityService {
         }
     }
 
-    private class InteractTouchListener implements View.OnTouchListener {
+    private class InteractEvents implements View.OnTouchListener {
         @SuppressLint("ClickableViewAccessibility")
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    edge = event.getEdgeFlags();
-                    Log.d(TAG, "onTouch: "+edge);
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    final int diffX = (int) event.getRawX() - lastX;
-                    final int diffY = (int) event.getRawY() - lastY;
-                    switch (edge) {
-                        case MotionEvent.EDGE_TOP:
-                            resizeUp(diffY);
-                            break;
-                        case MotionEvent.EDGE_BOTTOM:
-                            resizeDown(diffY);
-                            break;
-                        case MotionEvent.EDGE_LEFT:
-                            resizeLeft(diffX);
-                            break;
-                        case MotionEvent.EDGE_RIGHT:
-                            resizeRight(diffX);
-                            break;
-                        default:
-                            moveTo((int) vDisplay.getX() + diffX, (int) vDisplay.getY() + diffY);
-                            break;
-                    }
-                    if (isTesting) showLocation();
-                    wm.updateViewLayout(lDisplay, lpDisplay);
-                    break;
-                case MotionEvent.ACTION_UP:
-                    syncParams(vDisplay, lpInteract);
-                    wm.updateViewLayout(lInteract, lpInteract);
-                    break;
+            if (isStarted) {
+                vInteract.setVisibility(View.GONE);
+                updateLastTouch((int) event.getRawX(), (int) event.getRawY());
+
+                padding(lastX, lastY);
+                click(lastX, lastY, TEST_CLICK);
+                return true;
             }
-            updateLastTouch((int) event.getRawX(), (int) event.getRawY());
+
+            if (event.getAction() == MotionEvent.ACTION_MOVE)
+                move((int) event.getRawX() - lastX, (int) event.getRawY() - lastY);
+            interactEvent(event.getAction(), (int) event.getRawX(), (int) event.getRawY());
             return true;
         }
+    }
 
-        private void resizeUp(int diffY) {
-            vDisplay.getLayoutParams().height -= diffY;
-            moveToY((int) vDisplay.getY() + diffY);
-        }
+    private void move(int diffX, int diffY) { moveX(diffX); moveY(diffY); }
 
-        private void resizeDown(int diffY) {
-            vDisplay.getLayoutParams().height += diffY;
-        }
+    private void moveX(int diffX) {
+        final int x = (int) vDisplay.getX() + diffX;
+        if (x < rDisplay.left) vDisplay.setX(rDisplay.left);
+        else vDisplay.setX(Math.min(x, rDisplay.right));
+    }
 
-        private void resizeLeft(int diffX) {
-            vDisplay.getLayoutParams().width -= diffX;
-            moveToX((int) vDisplay.getX() + diffX);
-        }
-
-        private void resizeRight(int diffX) {
-            vDisplay.getLayoutParams().width += diffX;
-        }
-
-        private void moveTo(int x, int y) { moveToX(x); moveToY(y); }
-
-        private void moveToX(int x) {
-            if (x < rDisplay.left) vDisplay.setX(rDisplay.left);
-            else vDisplay.setX(Math.min(x, rDisplay.right));
-        }
-
-        private void moveToY(int y) {
-            if (y < rDisplay.top) vDisplay.setY(rDisplay.top);
-            else vDisplay.setY(Math.min(y, rDisplay.bottom));
-        }
+    private void moveY(int diffY) {
+        final int y = (int) vDisplay.getY() + diffY;
+        if (y < rDisplay.top) vDisplay.setY(rDisplay.top);
+        else vDisplay.setY(Math.min(y, rDisplay.bottom));
     }
 
     @SuppressLint("SetTextI18n")
@@ -295,18 +337,18 @@ public class MyAccessibilityService extends AccessibilityService {
         lMenu.findViewById(R.id.start).setVisibility(View.INVISIBLE);
         lMenu.findViewById(R.id.pause).setVisibility(View.VISIBLE);
         isStarted = true;
-
-        lpDisplay.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
-        wm.updateViewLayout(lDisplay, lpDisplay);
     }
 
     private void pause() {
         lMenu.findViewById(R.id.pause).setVisibility(View.INVISIBLE);
         lMenu.findViewById(R.id.start).setVisibility(View.VISIBLE);
+        vInteract.setVisibility(View.VISIBLE);
         isStarted = false;
 
-        lpDisplay.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-        wm.updateViewLayout(lDisplay, lpDisplay);
+        vEdgeT.getLayoutParams().height = edge;
+        vEdgeB.getLayoutParams().height = edge;
+        vEdgeL.getLayoutParams().width = edge;
+        vEdgeR.getLayoutParams().width = edge;
     }
 
     private void close() {
@@ -318,15 +360,25 @@ public class MyAccessibilityService extends AccessibilityService {
 
     private void updateLastTouch(int x, int y) { lastX = x; lastY = y;}
 
-    private void click(int x, int y) {
+    private int count = 0;
+    private void click(int x, int y, int mCount) {
         final Path path = new Path();
         path.moveTo(x, y);
-        dispatchGesture(new GestureDescription.Builder().
-                addStroke(new GestureDescription.StrokeDescription(path, 0, 100)).build(),new GestureResultCallback() {
-            @Override
-            public void onCompleted(GestureDescription gestureDescription) { super.onCompleted(gestureDescription);}
-            @Override
-            public void onCancelled(GestureDescription gestureDescription) { super.onCancelled(gestureDescription);}}, null);
+
+        if (count < mCount) {
+            dispatchGesture(new GestureDescription.Builder().
+                    addStroke(new GestureDescription.StrokeDescription(path, 0, 100)).build(),new GestureResultCallback() {
+                @Override
+                public void onCompleted(GestureDescription gestureDescription) {
+                    super.onCompleted(gestureDescription);
+                    count++;
+                }
+                @Override
+                public void onCancelled(GestureDescription gestureDescription) {
+                    super.onCancelled(gestureDescription);
+                }}, null);
+        }
+        else count = 0;
     }
 
     @Override
