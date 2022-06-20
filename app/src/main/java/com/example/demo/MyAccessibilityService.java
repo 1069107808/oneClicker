@@ -1,7 +1,5 @@
 package com.example.demo;
 
-import static android.content.ContentValues.TAG;
-
 import android.accessibilityservice.AccessibilityService;
 
 import android.accessibilityservice.GestureDescription;
@@ -10,7 +8,6 @@ import android.content.Intent;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.os.Build;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
