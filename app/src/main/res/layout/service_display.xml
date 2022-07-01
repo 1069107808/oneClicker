@@ -10,36 +10,4 @@
         android:background="@drawable/rectangle"
         android:contentDescription="@string/app_name" />
 
-    <TextView
-        android:id="@+id/LT"
-        android:textSize="20sp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/mView"
-        android:layout_alignTop="@+id/mView"/>
-
-    <TextView
-        android:id="@+id/RT"
-        android:textSize="20sp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignEnd="@+id/mView"
-        android:layout_alignTop="@+id/mView"/>
-
-    <TextView
-        android:id="@+id/LB"
-        android:textSize="20sp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/mView"
-        android:layout_alignBottom="@+id/mView"/>
-
-    <TextView
-        android:id="@+id/RB"
-        android:textSize="20sp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignEnd="@+id/mView"
-        android:layout_alignBottom="@+id/mView"/>
-
 </RelativeLayout>
