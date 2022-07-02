@@ -27,9 +27,6 @@ public class MyAccessibilityService extends AccessibilityService {
 
     private final static int CENTRAL = 0, TOP = 1, BOTTOM = 2, LEFT = 3, RIGHT = 4, INDEX = 5;
 
-    private final static int TEST_CLICK = 25;
-    private final static int KEEP_CLICK = 0;
-
     private boolean isStarted = false;
     private boolean isCreated = false;
     private boolean isRemoved = false;
@@ -50,11 +47,9 @@ public class MyAccessibilityService extends AccessibilityService {
 
     private final WindowManager.LayoutParams[] interactLP = new WindowManager.LayoutParams[INDEX];
 
-    Path path;
+    private Path path;
 
-    GestureDescription.Builder builder;
-
-    GestureResultCallback callback;
+    //GestureResultCallback callback;
 
     @Override
     public void onCreate() {
@@ -94,29 +89,11 @@ public class MyAccessibilityService extends AccessibilityService {
         interact[RIGHT] = createView(Color.parseColor("#4CAF50"), RIGHT);
 
         for (int i = 0; i < INDEX; i++) {
-            interactLP[i] = initParams(-2, -2, type, 0.65f, Gravity.TOP, 0x00000020);
-            interact[i].setOnTouchListener(new InteractEvents());
+            interactLP[i] = initParams(-2, -2, type, 0.00f, Gravity.TOP, 0x00000020);
+            interact[i].setOnTouchListener(new EdgeViewEvents());
         }
 
         path = new Path();
-
-        builder = new GestureDescription.Builder();
-
-        /*
-        callback = new GestureResultCallback() {
-            @Override
-            public void onCompleted(GestureDescription gestureDescription) {
-                super.onCompleted(gestureDescription);
-                Log.d(TAG, "onCompleted: ");
-            }
-
-            @Override
-            public void onCancelled(GestureDescription gestureDescription) {
-                super.onCancelled(gestureDescription);
-                Log.d(TAG, "onCancelled: ");
-            }
-        };
-         */
     }
 
     @Override
@@ -124,7 +101,7 @@ public class MyAccessibilityService extends AccessibilityService {
         if (!isCreated) {
             initView();
             wm.addView(display, displayLP);
-            addView(0);
+            addView();
             wm.addView(menu, menuLP);
             rect.right = screenW - vDisplay.getWidth();
             rect.bottom = screenH - vDisplay.getHeight();
@@ -203,52 +180,62 @@ public class MyAccessibilityService extends AccessibilityService {
         else vDisplay.setY(Math.min(y, rect.bottom));
     }
 
-    private class CentralEvents implements View.OnTouchListener {
+    private class EdgeViewEvents implements View.OnTouchListener {
         @SuppressLint("ClickableViewAccessibility")
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-            if (isStarted) {
-                padding(lastX, lastY, edge);
-                allowTouchEvents(1);
-                updateViewLayout(0);
-                isRemoved = true;
-            } else {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_MOVE:
-                        move((int) event.getRawX() - lastX, (int) event.getRawY() - lastY);
-                    case MotionEvent.ACTION_DOWN:
-                    case MotionEvent.ACTION_UP:
-                        updateLastTouch((int) event.getRawX(), (int) event.getRawY());
-                        break;
-                }
-            }
+            if (isStarted)
+                if (v.getId() == CENTRAL) centralTouchEvents(event.getAction(), (int) event.getRawX(), (int) event.getRawY());
+                else edgeTouchEvents(event.getAction(), (int) event.getRawX(), (int) event.getRawY());
+            else
+                interactEvents(event.getAction(), v.getId(), (int) event.getRawX(), (int) event.getRawY());
             return true;
         }
-    }
 
-    private class InteractEvents implements View.OnTouchListener {
-        @SuppressLint("ClickableViewAccessibility")
-        @Override
-        public boolean onTouch(View v, MotionEvent event) {
-            if (isStarted) {
-                updateLastTouch((int) event.getRawX(), (int) event.getRawY());
-                if (inBox(vDisplay, lastX, lastY)) padding(lastX, lastY, edge);
-                else homing();
-                updateViewLayout(1);
-                //click(lastX, lastY, TEST_CLICK)
-            } else {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_MOVE:
-                        updateDisplay(v.getId(), (int) event.getRawX(), (int) event.getRawY());
-                    case MotionEvent.ACTION_DOWN:
-                        updateLastTouch((int) event.getRawX(), (int) event.getRawY());
-                        break;
-                    case MotionEvent.ACTION_UP:
-                        updateInteractLayer();
-                        break;
-                }
+        private void centralTouchEvents(int action, int x, int y) {
+            if (isRemoved) {
+                interactLP[TOP].y = 0;
+                setLRParams(interactLP[TOP], 0, display.getWidth());
+                setLRParams(interactLP[BOTTOM], 0, display.getWidth());
+
+                interactLP[LEFT].x = 0;
+                setTBParams(interactLP[LEFT], 0, display.getHeight());
+                setTBParams(interactLP[RIGHT], 0, display.getHeight());
+
+                interactLP[CENTRAL].flags = WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+                wm.updateViewLayout(interact[CENTRAL], interactLP[CENTRAL]);
+
+                for (int i = TOP; i < INDEX; i++) interactLP[i].flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
+                isRemoved = false;
             }
-            return true;
+            edgeTouchEvents(action, x, y);
+        }
+
+        private void edgeTouchEvents(int action, int x, int y) {
+            if (inBox(vDisplay, x, y)) {
+                padding(x, y, blank);
+                for (int i = TOP; i < INDEX; i++) wm.updateViewLayout(interact[i], interactLP[i]);
+                if (action == MotionEvent.ACTION_UP) click(x, y);
+            } else {
+                homing();
+                interactLP[CENTRAL].flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
+                for (int i = TOP; i < INDEX; i++) interactLP[i].flags = WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+                for (int i = 0; i < INDEX; i++) wm.updateViewLayout(interact[i], interactLP[i]);
+                isRemoved = true;
+            }
+        }
+
+        private void interactEvents(int action, int id, int x, int y) {
+            switch (action) {
+                case MotionEvent.ACTION_MOVE:
+                    updateDisplay(id, x, y);
+                case MotionEvent.ACTION_DOWN:
+                    updateLastTouch(x, y);
+                    break;
+                case MotionEvent.ACTION_UP:
+                    updateInteractLayer();
+                    break;
+            }
         }
     }
 
@@ -256,41 +243,39 @@ public class MyAccessibilityService extends AccessibilityService {
         menu.findViewById(R.id.start).setVisibility(View.INVISIBLE);
         menu.findViewById(R.id.pause).setVisibility(View.VISIBLE);
 
-        blockTouchEvents(1);
-        updateViewLayout(0);
+        isRemoved = true;
         isStarted = true;
+
+        for (int i = TOP; i < INDEX; i++) interactLP[i].flags = WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+        for (int i = TOP; i < INDEX; i++) wm.updateViewLayout(interact[i], interactLP[i]);
     }
 
     private void pause() {
         menu.findViewById(R.id.pause).setVisibility(View.INVISIBLE);
         menu.findViewById(R.id.start).setVisibility(View.VISIBLE);
 
-        if (isRemoved) {
-            homing();
-            interactLP[CENTRAL].flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
-            updateViewLayout(0);
-        } else {
-            allowTouchEvents(1);
-            updateViewLayout(1);
-        }
-
         isStarted = false;
         isRemoved = false;
+
+        homing();
+        allowTouchEvents();
+        updateViewLayout();
     }
 
     private void close() {
         menu.findViewById(R.id.pause).setVisibility(View.INVISIBLE);
         menu.findViewById(R.id.start).setVisibility(View.VISIBLE);
 
-        setTouchable(0);
-
-        removeView(0);
-        wm.removeView(display);
-        wm.removeView(menu);
-
         isStarted = false;
         isRemoved = false;
         isCreated = false;
+
+        homing();
+        allowTouchEvents();
+
+        removeView();
+        wm.removeView(display);
+        wm.removeView(menu);
     }
 
     private void updateDisplay(int id, int nowX, int nowY) {
@@ -316,30 +301,29 @@ public class MyAccessibilityService extends AccessibilityService {
 
     private void updateLastTouch(int x, int y) { lastX = x; lastY = y;}
 
-    private void updateInteractLayer() { homing(); updateViewLayout(0); }
+    private void updateInteractLayer() { homing(); updateViewLayout(); }
 
     private int mCount = 0;
-    private void click(int x, int y, int count) {
+    private void click(int x, int y) {
         path.moveTo(x, y);
-        GestureDescription gesture = builder.addStroke(new GestureDescription.StrokeDescription(path, 500, 300)).build();
 
-        while (mCount <= count + 1) {
-            mCount++;
-            dispatchGesture(gesture, new GestureResultCallback() {
-                @Override
-                public void onCompleted(GestureDescription gestureDescription) {
-                    super.onCompleted(gestureDescription);
-                    Log.d(TAG, "onCompleted: "+ mCount);
-                }
+        GestureDescription gesture = new GestureDescription.Builder().addStroke(new GestureDescription.StrokeDescription(path, 150, 10)).build();
 
-                @Override
-                public void onCancelled(GestureDescription gestureDescription) {
-                    super.onCancelled(gestureDescription);
-                    Log.d(TAG, "onCancelled: "+ mCount);
-                }
-            }, null);
-        }
-        mCount = 0;
+        GestureResultCallback callback = new GestureResultCallback() {
+            @Override
+            public void onCompleted(GestureDescription gestureDescription) {
+                super.onCompleted(gestureDescription);
+                Log.d(TAG, "onCompleted: " + (++mCount));
+                click(x, y);
+            }
+            @Override
+            public void onCancelled(GestureDescription gestureDescription) {
+                super.onCancelled(gestureDescription);
+                Log.d(TAG, "onCancelled: " + mCount);
+            }
+        };
+
+        dispatchGesture(gesture, callback, null);
     }
 
     private View createView(@ColorInt int color, int id) {
@@ -349,24 +333,39 @@ public class MyAccessibilityService extends AccessibilityService {
         return view;
     }
 
-    private void addView(int flag) { for (int i = flag; i < INDEX; i++) wm.addView(interact[i], interactLP[i]); }
+    private void addView() { for (int i = 0; i < INDEX; i++) wm.addView(interact[i], interactLP[i]); }
 
-    private void updateViewLayout(int flag) { for (int i = flag; i < INDEX; i++) wm.updateViewLayout(interact[i], interactLP[i]); }
+    private void updateViewLayout() { for (int i = 0; i < INDEX; i++) wm.updateViewLayout(interact[i], interactLP[i]); }
 
-    private void removeView(int flag) { for (int i = flag; i < INDEX; i++) wm.removeView(interact[i]); }
+    private void removeView() { for (int i = 0; i < INDEX; i++) wm.removeView(interact[i]); }
 
-    private void setTouchable(int flag) { for (int i = flag; i < INDEX; i++) interactLP[i].flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL; }
+    private void allowTouchEvents() { for (int i = 0; i < INDEX; i++) interactLP[i].flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL; }
 
-    private void allowTouchEvents(int flag) {
-        if (flag == 1) interactLP[CENTRAL].flags = WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
-        for (int i = flag; i < INDEX; i++)
-            interactLP[i].flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
+    private void blockTouchEvents() { for (int i = 0; i < INDEX; i++) interactLP[i].flags = WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE; }
+
+    private void addView(boolean flag) {
+        if (flag) for (int i = TOP; i < INDEX; i++) wm.addView(interact[i], interactLP[i]);
+        else wm.addView(interact[CENTRAL], interactLP[CENTRAL]);
     }
 
-    private void blockTouchEvents(int flag) {
-        if (flag == 1) interactLP[CENTRAL].flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
-        for (int i = flag; i < INDEX; i++)
-            interactLP[i].flags = WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+    private void updateViewLayout(boolean flag) {
+        if (flag) for (int i = TOP; i < INDEX; i++) wm.updateViewLayout(interact[i], interactLP[i]);
+        else wm.updateViewLayout(interact[CENTRAL], interactLP[CENTRAL]);
+    }
+
+    private void removeView(boolean flag) {
+        if (flag) for (int i = TOP; i < INDEX; i++) wm.removeView(interact[i]);
+        else wm.removeView(interact[CENTRAL]);
+    }
+
+    private void allowTouchEvents(boolean flag) {
+        if (flag) for (int i = TOP; i < INDEX; i++) interactLP[i].flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
+        else interactLP[CENTRAL].flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
+    }
+
+    private void blockTouchEvents(boolean flag) {
+        if (flag) for (int i = TOP; i < INDEX; i++) interactLP[i].flags = WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+        else interactLP[CENTRAL].flags = WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
     }
 
     private void resizeTop(int diffY) {
@@ -392,12 +391,6 @@ public class MyAccessibilityService extends AccessibilityService {
     }
 
     private void homing() {
-        if (isRemoved) {
-            isRemoved = false;
-            blockTouchEvents(1);
-            wm.updateViewLayout(interact[CENTRAL], interactLP[CENTRAL]);
-        }
-
         setLayoutParams(interactLP[CENTRAL], vDisplay);
         setLayoutParams(interactLP[TOP], interactLP[CENTRAL].x, interactLP[CENTRAL].y, interactLP[CENTRAL].width, edge);
         setLayoutParams(interactLP[BOTTOM], interactLP[CENTRAL].x, interactLP[CENTRAL].y + interactLP[CENTRAL].height - edge, interactLP[CENTRAL].width, edge);
@@ -406,30 +399,15 @@ public class MyAccessibilityService extends AccessibilityService {
     }
 
     private void padding(int x, int y, int interval) {
-        if (!isRemoved) {
-            isRemoved = true;
-            allowTouchEvents(1);
-            wm.updateViewLayout(interact[CENTRAL], interactLP[CENTRAL]);
-
-            interactLP[TOP].y = 0;
-            setLRParams(interactLP[TOP], 0, display.getWidth());
-            setLRParams(interactLP[BOTTOM], 0, display.getWidth());
-
-            interactLP[LEFT].x = 0;
-            setTBParams(interactLP[LEFT], 0, display.getHeight());
-            setTBParams(interactLP[RIGHT], 0, display.getHeight());
-        }
-
         final int h = display.getHeight() == screenH ? statusH : 0;
         interactLP[TOP].height = y - h - interval;
         setTBParams(interactLP[BOTTOM], y - h + interval, display.getHeight() - interactLP[BOTTOM].y);
-
         interactLP[LEFT].width = x - interval;
         setLRParams(interactLP[RIGHT], x + interval, display.getWidth() - interactLP[RIGHT].x);
     }
 
     private boolean inBox(View view, int x, int y) {
-        final int l = (int) view.getX(), r = l + view.getWidth(), t = (int) view.getY(), b = t + view.getHeight();
+        final int l = (int) view.getX(), r = l + view.getWidth(), t = (int) view.getY() + (display.getHeight() == screenH ? statusH : 0), b = t + view.getHeight();
         return x > l && x < r && y > t && y < b;
     }
 
