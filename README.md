@@ -2,7 +2,7 @@
 This clicker relies on Accessibility Services and Overlay permission.
 
 It will create a floating menu and window on the screen, any touch events
-outside the floating window will not be affected, users can touch on the floating window to move or resize it to an appropriate place before clicking.
+outside the floating window will not be affected, users can touch on the floating window to move or resize it to an appropriate place and size.
 
 After clicking on the "start" button on the menu, the floating window will not be able to move or resize until users click on "pause" on the menu.
 During this period, the touch events outside the window still not be affected, but once user touch on the floating window it will obtain it as the location
